@@ -390,7 +390,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Role: !GetAtt CustomClusterConfigRole.Arn
       Timeout: 900
       Code:
@@ -427,6 +427,7 @@ Resources:
     Type: Custom::ClusterConfig
     Properties:
       ServiceToken: !GetAtt CustomClusterConfigLambda.Arn
+
   StreamingBlogMSKCluster:
     Type: 'AWS::MSK::Cluster'
     Properties:
@@ -451,6 +452,7 @@ Resources:
       EnhancedMonitoring: PER_TOPIC_PER_BROKER
       KafkaVersion: 2.2.1
       NumberOfBrokerNodes: 2
+
   ReplicationSubnetGroup:
     Type: 'AWS::DMS::ReplicationSubnetGroup'
     Properties:
@@ -464,6 +466,7 @@ Resources:
       SubnetIds:
         - !Ref Subnet1
         - !Ref Subnet2
+
   ReplicationInstance:
     Type: 'AWS::DMS::ReplicationInstance'
     Properties:
@@ -483,13 +486,13 @@ Resources:
   SourceEndpoint:
     Type: 'AWS::DMS::Endpoint'
     Properties:
-      DatabaseName: testdb
+      DatabaseName: AuroraDB
       EndpointIdentifier: !Join
         - '-'
         - - !Ref 'AWS::StackName'
           - source
       EndpointType: source
-      EngineName: aurora
+      EngineName: aurora-postgresql
       Password: !Ref MasterUserPassword
       Port: !GetAtt
         - AuroraCluster
@@ -521,7 +524,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
-          sudo yum install python3.7 -y
+          sudo yum install python3.8 -y
           sudo yum install java-1.8.0-openjdk-devel -y
           sudo yum erase awscli -y
           sudo yum install mysql -y
@@ -535,14 +538,14 @@ Resources:
           tar -xzf kafka_2.12-2.2.1.tgz
           cd /home/ec2-user
           wget https://bootstrap.pypa.io/get-pip.py
-          su -c "python3.7 get-pip.py --user" -s /bin/sh ec2-user
+          su -c "python3.8 get-pip.py --user" -s /bin/sh ec2-user
           su -c "/home/ec2-user/.local/bin/pip3 install boto3 --user" -s /bin/sh ec2-user
           su -c "/home/ec2-user/.local/bin/pip3 install awscli --user" -s /bin/sh ec2-user
           chown -R ec2-user ./kafka
           chgrp -R ec2-user ./kafka
           chown -R ec2-user ./mm
           chgrp -R ec2-user ./mm
-  CustomKakfaEndpoint:
+  CustomKafkaEndpoint:
     Type: Custom::KafkfaEndpoint
     Properties:
       ServiceToken: !GetAtt CustomKafkaEndpointLambda.Arn
@@ -551,7 +554,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Role: !GetAtt CustomClusterConfigRole.Arn
       Timeout: 900
       Code:
@@ -586,81 +589,8 @@ Resources:
             except Exception as e:
               print(e)
               cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
-  TestConnAllEndpoints:
-    Type: Custom::TestConn
-    Properties:
-      ServiceToken: !GetAtt TestConnLambda.Arn
-      ReplEndpoint: !Ref ReplicationInstance
-      KafkaEndpoint: !Ref CustomKakfaEndpoint
-      AuroraEndpoint: !Ref SourceEndpoint
-  #Modified script from
-  TestConnLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.lambda_handler
-      Runtime: python3.7
-      Role: !GetAtt CustomClusterConfigRole.Arn
-      Timeout: 900
-      Code:
-        ZipFile: |
-          import cfnresponse
-          import json
-          import boto3
-          def lambda_handler(event, context):
-              source_endpoint = event['ResourceProperties']['AuroraEndpoint']
-              kafka_endpoint = event['ResourceProperties']['KafkaEndpoint']
-              replication_inst = event['ResourceProperties']['ReplEndpoint']
-              if 'Create' in event['RequestType']:
-                  print ('This is a %s event' %(event['RequestType']))
-                  print('Checking connection for Source .....')
-                  source_result = check_connection(source_endpoint,replication_inst)
-                  print('Source result was %s' %(source_result))
-                  if 'success' in source_result:
-                        print('Proceeding to check connection for Kafka Target ....')
-                        kafka_result = check_connection(kafka_endpoint,replication_inst)
-                        print('Kafka Target result was %s' %(kafka_result))
-                        if 'success' in kafka_result:
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, '')
-                        else:
-                          print('Kafka target connection failed')
-                          cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
-                  else:
-                      print('Source connection failed')
-                      cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
-              else:
-                  print('Delete event nothing will be done')
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
-          def check_connection(endpoint,rep):
-              dms = boto3.client('dms')
-              dms.test_connection(ReplicationInstanceArn=rep,EndpointArn=endpoint)
-              waiter = dms.get_waiter('test_connection_succeeds')
-              waiter.wait(
-                  Filters=[
-                      {
-                          'Name': 'endpoint-arn',
-                          'Values': [endpoint]
-                      },
-                      {
-                          'Name': 'replication-instance-arn',
-                          'Values':[rep]
-                      }
-                  ]
-              )
-              status_conn_api = dms.describe_connections(
-                  Filters=[
-                      {
-                          'Name': 'endpoint-arn',
-                          'Values': [endpoint]
-                      },
-                      {
-                          'Name': 'replication-instance-arn',
-                          'Values': [rep]
-                      }
-                  ]
-              )
-              stat_task = status_conn_api['Connections'][0]['Status']
-              print('The connection test was %s' %(stat_task))
-              return (stat_task)
+
+
   ReplicationTaskAuroraKafka:
     Type: 'AWS::DMS::ReplicationTask'
     Properties:
@@ -675,7 +605,8 @@ Resources:
         { "rules": [ { "rule-type": "selection", "rule-id": "1", "rule-name":
         "1", "object-locator": { "schema-name": "testdb", "table-name":
         "orders" }, "rule-action": "include" } ]}
-      TargetEndpointArn: !Ref CustomKakfaEndpoint
+      TargetEndpointArn: !Ref CustomKafkaEndpoint
+
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC

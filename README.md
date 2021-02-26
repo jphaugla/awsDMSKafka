@@ -73,15 +73,11 @@ This demonstates setting up a DMS and Kafka pipeline with Aurora Postgresql as t
 * Some tips on creating an AWS account with [AWS Account instructions](https://dms-immersionday.workshop.aws/en/envconfig/regular.html)
 * After reviewing  "Introduction" and "Getting Started", follow the Regular AWS Account instructions. ![Regular AWS Account](README_PHOTOS/InitialNavigation.jpg)
 * Complete the "Login to the AWS Console" and "Create an EC2 Key Pair" steps
-* In the "Configure the Environment" step, use the provided ./templates/maria2PG.yaml [maria2PG yaml](https://github.com/jphaugla/awsMariaDBtoPostgresql/blob/main/templates/maria2PG.yaml).  Choose SQL Server for the source database
+* In the "Configure the Environment" step, use the provided ./templates/maria2PG.yaml [Solution yaml](https://github.com/jphaugla/awsDMSKafka/blob/main/template/awsDMSKafka.yaml)
 
-### Edit Security Group Settings
-* Find the security group.  There are two security group created with the template.  Click on the InstanceSecurityGroup (not the DMSSecurityGroup)
-* Tighten security on the RDP rule.  Currently, the windows EC2 instance RCP port it is open to public
-    * Click "Edit Inbound Rules"
-    * on the RDP inbound rule, remove "0.0.0.0/16" and put in the address obtained in checkip with a /32  e.g.  "1.2.3.4/32"
-    * open all internal communication on private.  Easy way is to change the inbound rule with Access Type of Oracle-RDS to All TCP
-    * Click "save rules"
+### Troubleshoot environment creation
+* Can have issues with dms role creation
+* Lambda runtime python version.  Must be able to get to the correct python runtime. [this cfn-response discussion covers this](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-cfn-response-lambda/)
 
 ## MariaDB Setup
 The MariaDB is set up as an RDS instance by the maria2PG cloudformation yaml file.  In the next step, an mysql/mariadb configuarion file will be created to defaul connection to our mysql instance.
