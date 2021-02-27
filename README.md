@@ -20,19 +20,9 @@ Demo converting postgresql database to postgresql using postgresql and PostgresS
 - [Instructions](#instructions)
   - [Create Environment](#create-environment)
   - [Troubleshoot Environment](#troubleshoot-environment)
-- [postgresql Setup](#postgresql-setup)
-  - [Create Sample Databases](#create-sample-databases)
-- [Windows Setup](#windows-setup)
-  - [SCT](#sct)
-  - [Troubleshooting Windows](#troubleshooting-windows)
-- [postgresql with DMS](#postgresql-with-dms)
-  - [postgresql Replication](#postgresql-replication)
-  - [postgresql Drop Foreign Keys](#postgresql-drop-foreign-keys)
-- [Create DMS Resources](#create-dms-resources)
-  - [Create DMS Replication Instance](#create-dms-replication-instance)   
-  - [Create DMS Endpoints](#create-dms-endpoints)
-  - [Create postgresql to Postgresql Task](#create-postgresql-to-postgresql-task)
-  - [Create postgresql to Kinesis Task](#create-postgresql-to-kinesis-task)
+  - [Verify Kafka](#verify-kafka)
+  - [PG Table Population](#pg-table-population)
+  - [Verify Kafka Records](#verify-kafka-records)
 - [Cleaning up](#cleaning-up)
 
 
@@ -74,6 +64,7 @@ This demonstates setting up a DMS and Kafka pipeline with Aurora Postgresql as t
 * After reviewing  "Introduction" and "Getting Started", follow the Regular AWS Account instructions. ![Regular AWS Account](README_PHOTOS/InitialNavigation.jpg)
 * Complete the "Login to the AWS Console" and "Create an EC2 Key Pair" steps
 * In the "Configure the Environment" step, use the provided ./templates/awsDMSKafka.yaml [Solution yaml](https://github.com/jphaugla/awsDMSKafka/blob/main/template/awsDMSKafka.yaml)
+* Your pipeline should be up and running in 15-20 minutes
 
 ### Troubleshoot Environment
 * Can have issues with dms role creation.  If the dms-vpc-role already exists, an error will be given the CFN script will fail and rollback.  Either delete existing dms-vpc-role or remove its definition from the CFN script.
@@ -107,16 +98,31 @@ psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.
 # ignore alter table errors as these are alter to owner "postgresql" and our master user is master (unless changed)
 ```
 
-
-### verify kafka topic records
+### Start DMS replication 
+Now, let’s Start DMS task via aws cli so as our data starts getting replicated to MSK. Before running replace the DMS task ARN. You can find it in the AWS Console, under DMS service.
+```bash
+aws dms start-replication-task --replication-task-arn <dms task arn> --start-replication-task-type start-replication --region <regionid>
+```
+### Verify Kafka Records
 ```bash
 kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
 ```
 
 ### Cleaning up
-
-Remove all files from S3 to avoid accruing unnecessary charges
-
+* Stop the DMS Replication task by replacing the ARN in below command.
+```bash
+aws dms stop-replication-task --replication-task-arn <dms task arn> --region <regionid>
+```
+* Delete the CloudFormation stack.
+* Clean the resources that are dynamically created.
+  * Go to Services, then DMS and click endpoints in the left navigation.
+  * Delete “dms-blog-kafka-target” DMS endpoints. 
+* Delete any CloudWatch log-groups if got created.
+  * Go to Services, then CloudWatch and click “Log groups” in the navigation pane.
+  * Delete any Log groups with name “Streaming-DMS-MSK” or use the stack name if you changed it from default while creating the stack.
+* Delete MSK Cluster Configuration.
+  * Go to Services, then MSK and click cluster configuration in the left navigation.
+  * Delete any configuration with name containing "Streaming-Blog-MSKCluster" in it.
 &nbsp;
 
 ---
