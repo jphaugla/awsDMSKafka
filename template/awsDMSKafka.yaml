@@ -134,6 +134,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+
   Subnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -147,6 +148,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+          
   Subnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -160,12 +162,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+
   InternetGateway:
     Type: 'AWS::EC2::InternetGateway'
     Properties:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+          
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -176,6 +180,7 @@ Resources:
           FromPort: 0
           ToPort: 65535
           CidrIp: !Ref IPCidrToAllowTraffic
+
   SGBaseIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -184,11 +189,13 @@ Resources:
       FromPort: 0
       ToPort: 65535
       SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+
   VPCGatewayAttachment:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
+
   PublicRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
@@ -196,6 +203,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+
   PublicRoute:
     Type: 'AWS::EC2::Route'
     DependsOn: VPCGatewayAttachment
@@ -203,16 +211,19 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
+
   SubnetRouteTableAssociation1:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
       SubnetId: !Ref Subnet1
       RouteTableId: !Ref PublicRouteTable
+
   SubnetRouteTableAssociation2:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
       SubnetId: !Ref Subnet2
       RouteTableId: !Ref PublicRouteTable
+
   PublicNetworkAcl:
     Type: 'AWS::EC2::NetworkAcl'
     Properties:
@@ -220,16 +231,19 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
+
   SubnetNetworkAclAssociation1:
     Type: 'AWS::EC2::SubnetNetworkAclAssociation'
     Properties:
       SubnetId: !Ref Subnet1
       NetworkAclId: !Ref PublicNetworkAcl
+
   SubnetNetworkAclAssociation2:
     Type: 'AWS::EC2::SubnetNetworkAclAssociation'
     Properties:
       SubnetId: !Ref Subnet2
       NetworkAclId: !Ref PublicNetworkAcl
+
   InboundPublicNetworkAclEntry:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -239,6 +253,7 @@ Resources:
       RuleAction: allow
       Egress: 'false'
       CidrBlock: 0.0.0.0/0
+
   OutboundPublicNetworkAclEntry:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -248,6 +263,7 @@ Resources:
       RuleAction: allow
       Egress: 'true'
       CidrBlock: 0.0.0.0/0
+
   DBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
@@ -283,6 +299,7 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
       BackupRetentionPeriod: '7'
+      Port: '5432'
       VpcSecurityGroupIds:
         - !Ref InstanceSecurityGroup
 
@@ -332,6 +349,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonDMSVPCManagementRole'
       Path: /
+
   CustomClusterConfigRole:
     Type: AWS::IAM::Role
     Properties:
@@ -365,6 +383,7 @@ Resources:
                   - 'dms:CreateEndpoint'
                   - 'dms:DescribeConnections'
                 Resource: ['*']
+
   ClientEC2AccessRole:
     Type: AWS::IAM::Role
     Properties:
@@ -386,6 +405,7 @@ Resources:
                   - 'dms:StartReplicationTask'
                   - 'dms:StopReplicationTask'
                 Resource: ['*']
+
   CustomClusterConfigLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -423,6 +443,7 @@ Resources:
             except Exception as e:
               print(e)
               cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
+
   CustomClusterConfig:
     Type: Custom::ClusterConfig
     Properties:
@@ -483,6 +504,7 @@ Resources:
       ReplicationSubnetGroupIdentifier: !Ref ReplicationSubnetGroup
       VpcSecurityGroupIds:
         - !Ref InstanceSecurityGroup
+
   SourceEndpoint:
     Type: 'AWS::DMS::Endpoint'
     Properties:
@@ -501,12 +523,14 @@ Resources:
         - AuroraCluster
         - Endpoint.Address
       Username: !Ref MasterUsername
+
   ClientEc2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
       Roles:
         - !Ref ClientEC2AccessRole
+
   ClientEC2Instance:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -527,7 +551,7 @@ Resources:
           sudo yum install python3.8 -y
           sudo yum install java-1.8.0-openjdk-devel -y
           sudo yum erase awscli -y
-          sudo yum install mysql -y
+          sudo yum install postgresql -y
           sudo yum install git maven -y
           cd /home/ec2-user
           echo "export PATH=.local/bin:$PATH" >> .bash_profile
@@ -545,11 +569,13 @@ Resources:
           chgrp -R ec2-user ./kafka
           chown -R ec2-user ./mm
           chgrp -R ec2-user ./mm
+
   CustomKafkaEndpoint:
     Type: Custom::KafkfaEndpoint
     Properties:
       ServiceToken: !GetAtt CustomKafkaEndpointLambda.Arn
       KafkaCluster: !Ref StreamingBlogMSKCluster
+
   CustomKafkaEndpointLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -603,8 +629,8 @@ Resources:
       SourceEndpointArn: !Ref SourceEndpoint
       TableMappings: >-
         { "rules": [ { "rule-type": "selection", "rule-id": "1", "rule-name":
-        "1", "object-locator": { "schema-name": "testdb", "table-name":
-        "orders" }, "rule-action": "include" } ]}
+        "1", "object-locator": { "schema-name": "public", "table-name":
+        "actor" }, "rule-action": "include" } ]}
       TargetEndpointArn: !Ref CustomKafkaEndpoint
 
 Outputs:
