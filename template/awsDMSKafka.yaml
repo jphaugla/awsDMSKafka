@@ -633,6 +633,25 @@ Resources:
         "actor" }, "rule-action": "include" } ]}
       TargetEndpointArn: !Ref CustomKafkaEndpoint
 
+  ReplicationTaskTwoToOne:
+    Type: 'AWS::DMS::ReplicationTask'
+    Properties:
+      MigrationType: full-load-and-cdc
+      ReplicationInstanceArn: !Ref ReplicationInstance
+      #hard coded value as the regex with stack name needs to be converted to lower case for task name
+      ReplicationTaskIdentifier: dms-blog-two-to-one
+      ReplicationTaskSettings: >-
+        {"TargetMetadata":{"TargetSchema":"MASTER","SupportLobs":true,"LimitedSizeLobMode":true,"LobMaxSize":32},"sFullLoadSettings":{"TargetTablePrepMode":"DROP_AND_CREATE"},"Logging":{"EnableLogging":true,"LogComponents":[{"Id":"SOURCE_CAPTURE","Severity":"LOGGER_SEVERITY_DETAILED_DEBUG"},{"Id":"TASK_MANAGER","Severity":"LOGGER_SEVERITY_DETAILED_DEBUG"}]}}
+      SourceEndpointArn: !Ref SourceEndpoint
+      TableMappings: >-
+        { "rules": [ 
+                    { "rule-type": "selection", "rule-id": "1", "rule-name": "1", "object-locator": 
+                        { "schema-name": "public", "table-name": "actor" }, "rule-action": "include" } ,
+                    { "rule-type": "selection", "rule-id": "2", "rule-name": "2", "object-locator": 
+                        { "schema-name": "public", "table-name": "actor_info" }, "rule-action": "include" } 
+                    ]}
+      TargetEndpointArn: !Ref CustomKafkaEndpoint
+
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC
