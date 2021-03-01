@@ -59,6 +59,7 @@ This demonstates setting up a DMS and Kafka pipeline with Aurora Postgresql as t
 &nbsp;
 
 ### Create Environment
+An unusual part of this cloud formation yaml file is the use of a custom endpoint.  A lambda function is used to deploy the DMS kafka target endpoint.  This is really due to a limitation in being able to output the broker list using the cloudformation stack.  Because of this limitation, the lambda function looks up this broker list and then creates the DMS endpoint.  Additional endpoints can be made manually or added to the labmda function.
 
 * Some tips on creating an AWS account with [AWS Account instructions](https://dms-immersionday.workshop.aws/en/envconfig/regular.html)
 * After reviewing  "Introduction" and "Getting Started", follow the Regular AWS Account instructions. ![Regular AWS Account](README_PHOTOS/InitialNavigation.jpg)
