@@ -63,8 +63,21 @@ This demonstates setting up a DMS and Kafka pipeline with Aurora Postgresql as t
 * Some tips on creating an AWS account with [AWS Account instructions](https://dms-immersionday.workshop.aws/en/envconfig/regular.html)
 * After reviewing  "Introduction" and "Getting Started", follow the Regular AWS Account instructions. ![Regular AWS Account](README_PHOTOS/InitialNavigation.jpg)
 * Complete the "Login to the AWS Console" and "Create an EC2 Key Pair" steps
-* In the "Configure the Environment" step, use the provided ./templates/awsDMSKafka.yaml [Solution yaml](https://github.com/jphaugla/awsDMSKafka/blob/main/template/awsDMSKafka.yaml)
-* Your pipeline should be up and running in 15-20 minutes
+* Several scripts are in the github to streamline the environment creation
+    * first step is to customize the setEnvironment script for the project name
+    * the setEnvironment will get local IP address to open this IP to access AWS resources in the security group
+    * cd template and edit the file "setEnvironment.sh"
+```bash
+cd template
+. ./setEnvironment.sh
+./awsdeploy1.sh
+```
+    * The pipeline should be up and running in 15-20 minutes
+    * on stack completion open the stack.out file to find the output variable for the MSK cluster ARN held in the parameter "StreamingBlogMSKCluster".  This value will be needed to look up the MSK cluster brokers
+```bash
+./getBrokers.sh arn:aws:kafka:us-east-1:569119288395:cluster/StreamingBlogMSKCluster/54405a9e-96f5-494c-84ae-4a48f15e2b9f-13
+```
+    * Can deploy additional DMS endpoints and tasks dependent on this broker list
 
 ### Troubleshoot Environment
 * Can have issues with dms role creation.  If the dms-vpc-role already exists, an error will be given the CFN script will fail and rollback.  Either delete existing dms-vpc-role or remove its definition from the CFN script.
