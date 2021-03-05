@@ -23,6 +23,7 @@ Demo converting postgresql database to postgresql using postgresql and PostgresS
   - [Verify Kafka](#verify-kafka)
   - [PG Table Population](#pg-table-population)
   - [Verify Kafka Records](#verify-kafka-records)
+  - [Additional Tests](#additional-testing)
 - [Cleaning up](#cleaning-up)
 
 
@@ -60,6 +61,7 @@ This demonstates setting up a DMS and Kafka pipeline with Aurora Postgresql as t
 
 ### Create Environment
 An unusual part of this cloud formation yaml file is the use of a custom endpoint.  A lambda function is used to deploy the DMS kafka target endpoint.  This is really due to a limitation in being able to output the broker list using the cloudformation stack.  Because of this limitation, the lambda function looks up this broker list and then creates the DMS endpoint.  Additional endpoints can be made manually or added to the labmda function.
+Note:  In the MSK Cluster configuration, auto.create.topics.enable = true.  Creating a DMS endpoint using the kafka engine will create the new kafka topic.
 
 * Some tips on creating an AWS account with [AWS Account instructions](https://dms-immersionday.workshop.aws/en/envconfig/regular.html)
 * After reviewing  "Introduction" and "Getting Started", follow the Regular AWS Account instructions. ![Regular AWS Account](README_PHOTOS/InitialNavigation.jpg)
@@ -77,9 +79,44 @@ cd template
     * on stack completion open the stack.out file to find the output variable for the MSK cluster ARN held in the parameter "StreamingBlogMSKCluster".  This value will be needed to look up the MSK cluster brokers
 ```bash
 ./getBrokers.sh arn:aws:kafka:us-east-1:569119288395:cluster/StreamingBlogMSKCluster/54405a9e-96f5-494c-84ae-4a48f15e2b9f-13
+{
+    "BootstrapBrokerString": "b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
+    "BootstrapBrokerStringTls": "b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9094,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9094"
+}
 ```
-    * Can deploy additional DMS endpoints and tasks dependent on this broker list
-
+    * Use the BootstrapBrokerString when broker list is required
+### Additional Testing
+    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpoint.sh script
+    * the createEndpoint.sh script uses kafka-settings.json for the broker list and the topic.  Edit the kafka-setting.json as needed
+```bash
+./createEndpoint.sh
+{
+    "Endpoint": {
+        "EndpointIdentifier": "schema-table",
+        "EndpointType": "TARGET",
+        "EngineName": "kafka",
+        "EngineDisplayName": "Kafka",
+        "Status": "active",
+        "KmsKeyId": "arn:aws:kms:us-east-1:569119288395:key/9c7b40cf-116b-42fa-ad2c-9fd0418b58bc",
+        "EndpointArn": "arn:aws:dms:us-east-1:569119288395:endpoint:A623PQWRSTGJKC2JE2LCSOKLAUV4PHZUGBVQQ6A",
+        "SslMode": "none",
+        "KafkaSettings": {
+            "Broker": "b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092, b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
+            "Topic": "jph-topic"
+        }
+    }
+}
+```
+    * this enpoint arn will be needed to define the dms task
+    * modifify the createReplicationTask.sh script to have the correct arn for source endpoint, target endpoint, and replication instance 
+    * this task will use schema-table partitioning to have the schema/table be the partitioning key
+```bash
+./createReplicationTask.sh
+```
+    * verify the kafka partition key is correct-run this from the ec2 instance which has the kafka tools installed
+```bash
+kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic schema-table --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --from-beginning --property print.key=true  --property key.separator="-"
+```
 ### Troubleshoot Environment
 * Can have issues with dms role creation.  If the dms-vpc-role already exists, an error will be given the CFN script will fail and rollback.  Either delete existing dms-vpc-role or remove its definition from the CFN script.
 * Lambda runtime python version.  Must be able to get to the correct python runtime. [this cfn-response discussion covers this](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-cfn-response-lambda/)
