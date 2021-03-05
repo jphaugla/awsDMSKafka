@@ -648,7 +648,7 @@ Resources:
                     { "rule-type": "selection", "rule-id": "1", "rule-name": "1", "object-locator": 
                         { "schema-name": "public", "table-name": "actor" }, "rule-action": "include" } ,
                     { "rule-type": "selection", "rule-id": "2", "rule-name": "2", "object-locator": 
-                        { "schema-name": "public", "table-name": "actor_info" }, "rule-action": "include" } 
+                        { "schema-name": "public", "table-name": "customer" }, "rule-action": "include" } 
                     ]}
       TargetEndpointArn: !Ref CustomKafkaEndpoint
 
