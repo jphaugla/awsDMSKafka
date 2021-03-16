@@ -1,0 +1,9 @@
+{
+    "ServiceAccessRoleArn": "arn:aws:iam::569119288395:role/UseDMSwithxyzbucket",
+    "BucketFolder": "fromdms",
+    "BucketName": "jphmenu-xyzlocal-s3",
+    "CsvDelimiter": ",",
+    "DataFormat": "parquet",
+    "DatePartitionEnabled": true,
+    "DatePartitionSequence": "YYYYMMDDHH"
+}

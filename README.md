@@ -85,38 +85,17 @@ cd template
 }
 ```
     * Use the BootstrapBrokerString when broker list is required
-### Additional Testing
-    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpoint.sh script
-    * the createEndpoint.sh script uses kafka-settings.json for the broker list and the topic.  Edit the kafka-setting.json as needed
-```bash
-./createEndpoint.sh
-{
-    "Endpoint": {
-        "EndpointIdentifier": "schema-table",
-        "EndpointType": "TARGET",
-        "EngineName": "kafka",
-        "EngineDisplayName": "Kafka",
-        "Status": "active",
-        "KmsKeyId": "arn:aws:kms:us-east-1:569119288395:key/9c7b40cf-116b-42fa-ad2c-9fd0418b58bc",
-        "EndpointArn": "arn:aws:dms:us-east-1:569119288395:endpoint:A623PQWRSTGJKC2JE2LCSOKLAUV4PHZUGBVQQ6A",
-        "SslMode": "none",
-        "KafkaSettings": {
-            "Broker": "b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092, b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
-            "Topic": "jph-topic"
-        }
-    }
-}
-```
-    * this enpoint arn will be needed to define the dms task
-    * modifify the createReplicationTask.sh script to have the correct arn for source endpoint, target endpoint, and replication instance 
-    * this task will use schema-table partitioning to have the schema/table be the partitioning key
-```bash
-./createReplicationTask.sh
-```
     * verify the kafka partition key is correct-run this from the ec2 instance which has the kafka tools installed
 ```bash
 kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic schema-table --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --from-beginning --property print.key=true  --property key.separator="-"
 ```
+    * upgrade postgresql psql to version 11
+```bash
+sudo amazon-linux-extras enable postgresql11
+sudo yum clean metadata
+sudo yum install postgresql
+```
+
 ### Troubleshoot Environment
 * Can have issues with dms role creation.  If the dms-vpc-role already exists, an error will be given the CFN script will fail and rollback.  Either delete existing dms-vpc-role or remove its definition from the CFN script.
 * Lambda runtime python version.  Must be able to get to the correct python runtime. [this cfn-response discussion covers this](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-cfn-response-lambda/)
@@ -158,6 +137,67 @@ aws dms start-replication-task --replication-task-arn <dms task arn> --start-rep
 ```bash
 kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
 ```
+### Additional Testing
+    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpoint.sh script
+    * the createEndpoint.sh script uses kafka-settings.json for the broker list and the topic.  Edit the kafka-setting.json as needed
+```bash
+./createEndpoint.sh
+{
+    "Endpoint": {
+        "EndpointIdentifier": "schema-table",
+        "EndpointType": "TARGET",
+        "EngineName": "kafka",
+        "EngineDisplayName": "Kafka",
+        "Status": "active",
+        "KmsKeyId": "arn:aws:kms:us-east-1:569119288395:key/9c7b40cf-116b-42fa-ad2c-9fd0418b58bc",
+        "EndpointArn": "arn:aws:dms:us-east-1:569119288395:endpoint:A623PQWRSTGJKC2JE2LCSOKLAUV4PHZUGBVQQ6A",
+        "SslMode": "none",
+        "KafkaSettings": {
+            "Broker": "b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092, b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
+            "Topic": "jph-topic"
+        }
+    }
+}
+```
+    * this endpoint arn will be needed to define the dms task
+    * modifify the createReplicationTask.sh script to have the correct arn for source endpoint, target endpoint, and replication instance 
+    * this task will use schema-table partitioning to have the schema/table be the partitioning key
+```bash
+./createReplicationTask.sh
+```
+### S3 test
+    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpointS3.sh script
+    * the createEndpointS3.sh script uses s3-settings.json for the broker list and the topic.  Edit the s3-setting.json as needed
+```bash
+./createEndpointS3.sh
+```
+### Add jsonb column
+```bash
+ssh -i <ssh to ec2 instance>
+psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master 
+alter table actor add phones jsonb
+insert into actor (actor_id, first_name, last_name, phones) values (303, 'Frida', 'Gonzales','[ {"type": "mobile", "phone": "001001"} , {"type": "fix", "phone": "002002"} ]')
+```
+
+
+
+### Troubleshoot DMS 
+When date partitioning was enabled, initially this error occurred
+```
+Unknown parameter in S3Settings: "DatePartitionEnabled", must be one of: ServiceAccessRoleArn, ExternalTableDefinition, CsvRowDelimiter, CsvDelimiter, BucketFolder, BucketName, CompressionType, EncryptionMode, ServerSideEncryptionKmsKeyId, DataFormat, EncodingType, DictPageSizeLimit, RowGroupLength, DataPageSize, ParquetVersion, EnableStatistics, IncludeOpForFullLoad, CdcInsertsOnly, TimestampColumnName, ParquetTimestampInMillisecond, CdcInsertsAndUpdates
+Unknown parameter in S3Settings: "DatePartitionSequence", must be one of: ServiceAccessRoleArn, ExternalTableDefinition, CsvRowDelimiter, CsvDelimiter, BucketFolder, BucketName, CompressionType, EncryptionMode, ServerSideEncryptionKmsKeyId, DataFormat, EncodingType, DictPageSizeLimit, RowGroupLength, DataPageSize, ParquetVersion, EnableStatistics, IncludeOpForFullLoad, CdcInsertsOnly, TimestampColumnName, ParquetTimestampInMillisecond, CdcInsertsAndUpdates
+```
+The reason for this error is that these options are a newer feature of the aws cli.  Checking the version, revealed this:
+```
+aws --version
+aws-cli/2.0.36 Python/3.7.4 Darwin/19.6.0 exe/x86_64
+```
+After upgrading the CLI, the command was successful. [AWS cli install/upgrade](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
+```
+ aws --version
+aws-cli/2.1.30 Python/3.8.8 Darwin/19.6.0 exe/x86_64 prompt/off
+```
+
 
 ### Cleaning up
 * Stop the DMS Replication task by replacing the ARN in below command.

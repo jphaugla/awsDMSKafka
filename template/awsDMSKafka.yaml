@@ -492,11 +492,12 @@ Resources:
     Type: 'AWS::DMS::ReplicationInstance'
     Properties:
       AllocatedStorage: 200
-      AutoMinorVersionUpgrade: 'false'
+      AllowMajorVersionUpgrade: 'true'
+      AutoMinorVersionUpgrade: 'true'
       AvailabilityZone: !GetAtt
         - Subnet1
         - AvailabilityZone
-      EngineVersion: 3.3.2
+      EngineVersion: 3.4.3
       PubliclyAccessible: 'false'
       ReplicationInstanceClass: !Ref ReplicationInstanceClass
       #mightfail https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dms-replicationinstance.html#cfn-dms-replicationinstance-replicationinstanceidentifier
