@@ -432,7 +432,7 @@ Resources:
                 print('Create stack call, MSK cluster config will be created')
                 r = kafka.create_configuration(
                   Description='StreamingBlogMSKCluster cluster configuration',
-                  KafkaVersions=[ '2.2.1'],
+                  KafkaVersions=[ '2.7.0'],
                   Name=randomString(),
                   ServerProperties=conf
                 )
@@ -471,7 +471,7 @@ Resources:
           ClientBroker: TLS_PLAINTEXT
           InCluster: true
       EnhancedMonitoring: PER_TOPIC_PER_BROKER
-      KafkaVersion: 2.2.1
+      KafkaVersion: 2.7.0
       NumberOfBrokerNodes: 2
 
   ReplicationSubnetGroup:
@@ -509,7 +509,7 @@ Resources:
   SourceEndpoint:
     Type: 'AWS::DMS::Endpoint'
     Properties:
-      DatabaseName: AuroraDB
+      DatabaseName: pagila
       EndpointIdentifier: !Join
         - '-'
         - - !Ref 'AWS::StackName'
@@ -559,8 +559,8 @@ Resources:
           mkdir kafka
           mkdir mm
           cd kafka
-          wget https://archive.apache.org/dist/kafka/2.2.1/kafka_2.12-2.2.1.tgz
-          tar -xzf kafka_2.12-2.2.1.tgz
+          wget https://archive.apache.org/dist/kafka/2.7.0/kafka_2.12-2.7.0.tgz
+          tar -xzf kafka_2.12-2.7.0.tgz
           cd /home/ec2-user
           wget https://bootstrap.pypa.io/get-pip.py
           su -c "python3.8 get-pip.py --user" -s /bin/sh ec2-user

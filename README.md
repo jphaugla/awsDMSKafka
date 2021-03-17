@@ -87,7 +87,7 @@ cd template
     * Use the BootstrapBrokerString when broker list is required
     * verify the kafka partition key is correct-run this from the ec2 instance which has the kafka tools installed
 ```bash
-kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic schema-table --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --from-beginning --property print.key=true  --property key.separator="-"
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic schema-table --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --from-beginning --property print.key=true  --property key.separator="-"
 ```
     * upgrade postgresql psql to version 11
 ```bash
@@ -107,7 +107,7 @@ Login to the EC2 instance and verify the MSK is running using installed Kafka to
     * [Refer this link](https://docs.aws.amazon.com/msk/latest/developerguide/msk-get-bootstrap-brokers.html) to get broker list for the kafka-topic command.
 ```bash
 ssh -i <pemfile> ec2-users@ec2IPAddress
-kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --list --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
+kafka/kafka_2.12-2.7.0/bin/kafka-topics.sh --list --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
 ```
 
 ### PG Table Population
@@ -116,15 +116,15 @@ kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --list --bootstrap-server b-1.streami
 cd
 git clone https://github.com/devrimgunduz/pagila.git
 cd pagila
-psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master -f pagila-schema.sql
+psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master 
+create database pagila
+\q
+psql -d pagila -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master -f pagila-schema.sql
 # ignore alter table errors as these are alter to owner "postgresql" and our master user is master (unless changed)
 ```
 * Populate the tables
 ```bash
-cd
-git clone https://github.com/devrimgunduz/pagila.git
-cd pagila
-psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master -f pagila-data.sql
+psql -d pagila -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master -f pagila-data.sql
 # ignore alter table errors as these are alter to owner "postgresql" and our master user is master (unless changed)
 ```
 
@@ -135,11 +135,12 @@ aws dms start-replication-task --replication-task-arn <dms task arn> --start-rep
 ```
 ### Verify Kafka Records
 ```bash
-kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputsingletable.out
 ```
 ### Additional Testing
     * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpoint.sh script
     * the createEndpoint.sh script uses kafka-settings.json for the broker list and the topic.  Edit the kafka-setting.json as needed
+    * this will create a topic called schema-topic
 ```bash
 ./createEndpoint.sh
 {
@@ -165,6 +166,15 @@ kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic dms-blog --bootstra
 ```bash
 ./createReplicationTask.sh
 ```
+### Start DMS replication 
+Now, let’s Start DMS task via aws cli so as our data starts getting replicated to MSK. Before running replace the DMS task ARN. You can find it in the AWS Console, under DMS service.
+```bash
+aws dms start-replication-task --replication-task-arn <dms task arn> --start-replication-task-type start-replication --region <regionid>
+```
+### Verify Kafka Records
+```bash
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputsingletable.out
+```
 ### S3 test
     * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpointS3.sh script
     * the createEndpointS3.sh script uses s3-settings.json for the broker list and the topic.  Edit the s3-setting.json as needed
@@ -174,7 +184,7 @@ kafka/kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --topic dms-blog --bootstra
 ### Add jsonb column
 ```bash
 ssh -i <ssh to ec2 instance>
-psql -d AuroraDB -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master 
+psql -d pagila -h jph-dms-kafka-source-1.cykwyngishlk.us-east-1.rds.amazonaws.com -U master 
 alter table actor add phones jsonb
 insert into actor (actor_id, first_name, last_name, phones) values (303, 'Frida', 'Gonzales','[ {"type": "mobile", "phone": "001001"} , {"type": "fix", "phone": "002002"} ]')
 ```
@@ -200,6 +210,7 @@ aws-cli/2.1.30 Python/3.8.8 Darwin/19.6.0 exe/x86_64 prompt/off
 
 
 ### Cleaning up
+* Can drop the pagila database
 * Stop the DMS Replication task by replacing the ARN in below command.
 ```bash
 aws dms stop-replication-task --replication-task-arn <dms task arn> --region <regionid>
@@ -214,6 +225,7 @@ aws dms stop-replication-task --replication-task-arn <dms task arn> --region <re
 * Delete MSK Cluster Configuration.
   * Go to Services, then MSK and click cluster configuration in the left navigation.
   * Delete any configuration with name containing "Streaming-Blog-MSKCluster" in it.
+
 &nbsp;
 
 ---
