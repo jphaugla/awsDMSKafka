@@ -187,6 +187,10 @@ kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstra
 ```bash
 ./createReplicationTaskPartitioned.sh
 ```
+### Verify Kafka Records
+```bash
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic partition-topic --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --from-beginning --property print.key=true --property key.separator="-"
+```
 ### S3 test
     * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpointS3.sh script
     * the createEndpointS3.sh script uses s3-settings.json for the broker list and the topic.  Edit the s3-setting.json as needed
