@@ -175,6 +175,18 @@ aws dms start-replication-task --replication-task-arn <dms task arn> --start-rep
 ```bash
 kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputsingletable.out
 ```
+### Test a partitioined table
+    * the createEndpointPartitioned.sh script uses kafka-partitioned-settings.json for the broker list and the topic.  
+    * this will create a topic called schema-topic
+```bash
+./createEndpointPartitioned.sh
+```
+    * this endpoint arn will be needed to define the dms task
+    * modifify the createReplicationTaskPartitioned.sh script to have the correct arn for source endpoint, target endpoint, and replication instance 
+    * this uses table-mapping-partitioned.json  it includes one partitioned table to kafka
+```bash
+./createReplicationTaskPartitioned.sh
+```
 ### S3 test
     * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpointS3.sh script
     * the createEndpointS3.sh script uses s3-settings.json for the broker list and the topic.  Edit the s3-setting.json as needed

@@ -421,7 +421,7 @@ Resources:
           import random
           import string
           kafka = boto3.client('kafka')
-          conf = bytes('auto.create.topics.enable = true', 'utf-8')
+          conf = bytes("auto.create.topics.enable = true" + "\n" +  "default.replication.factor=2", 'utf-8')
           def randomString(stringLength=10):
               letters = string.ascii_lowercase
               return ''.join(random.choice(letters) for i in range(stringLength))

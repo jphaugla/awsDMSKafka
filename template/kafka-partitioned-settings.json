@@ -1,0 +1,5 @@
+{
+    "Broker": "b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
+    "Topic": "partition-topic",
+    "IncludePartitionValue": true
+}
