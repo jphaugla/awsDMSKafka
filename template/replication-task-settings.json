@@ -1,0 +1,5 @@
+{
+    "ParallelLoadQueuesPerThread": 10,
+    "ParallelApplyQueuesPerThread": 10,
+    "ParallelApplyThreads": 4
+}
