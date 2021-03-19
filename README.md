@@ -138,27 +138,18 @@ aws dms start-replication-task --replication-task-arn <dms task arn> --start-rep
 kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputsingletable.out
 ```
 ### Additional Testing
-    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the createEndpoint.sh script
+    * Before doing this, I increaed my number of MSK broker from 2 to 4.  I did this by increasing the number of brokers per zone.  I am not sure how to do this in the aws CLI or in cloud formation so I edited this in the console.
+    * Can deploy additional DMS endpoints and tasks dependent on this broker list using the AWS CLI
+    * The follwoing steps will demonstrate create an endpoint that has mutliple partitions
     * the createEndpoint.sh script uses kafka-settings.json for the broker list and the topic.  Edit the kafka-setting.json as needed
-    * this will create a topic called schema-topic
+    * this will create an endpoint called "force-partition-end' and a kafka topic called force-partition-topic
+    * to ensure the number of partitions, run script to create the topic ahead of time
+```bash
+kafka/kafka_2.12-2.7.0/bin/kafka-topics.sh --create --topic force-partition-topic --bootstrap-server b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --partitions 2 --replication-factor 2
+```
+    * now create the endpoint and it will use the existing scripts
 ```bash
 ./createEndpoint.sh
-{
-    "Endpoint": {
-        "EndpointIdentifier": "schema-table",
-        "EndpointType": "TARGET",
-        "EngineName": "kafka",
-        "EngineDisplayName": "Kafka",
-        "Status": "active",
-        "KmsKeyId": "arn:aws:kms:us-east-1:569119288395:key/9c7b40cf-116b-42fa-ad2c-9fd0418b58bc",
-        "EndpointArn": "arn:aws:dms:us-east-1:569119288395:endpoint:A623PQWRSTGJKC2JE2LCSOKLAUV4PHZUGBVQQ6A",
-        "SslMode": "none",
-        "KafkaSettings": {
-            "Broker": "b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092, b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
-            "Topic": "jph-topic"
-        }
-    }
-}
 ```
     * this endpoint arn will be needed to define the dms task
     * modifify the createReplicationTask.sh script to have the correct arn for source endpoint, target endpoint, and replication instance 
@@ -172,8 +163,11 @@ Now, let’s Start DMS task via aws cli so as our data starts getting replicated
 aws dms start-replication-task --replication-task-arn <dms task arn> --start-replication-task-type start-replication --region <regionid>
 ```
 ### Verify Kafka Records
+   * this should capture all the records 
 ```bash
-kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic dms-blog --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputsingletable.out
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic force-partition-topic --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 > outputallrecords.out
+# this will only list for one partion so count should be smaller
+kafka/kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --topic force-partition-topic --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092 --partition 0 > outputallrecords.out
 ```
 ### Test a partitioined table
     * the createEndpointPartitioned.sh script uses kafka-partitioned-settings.json for the broker list and the topic.  
@@ -222,6 +216,10 @@ After upgrading the CLI, the command was successful. [AWS cli install/upgrade](h
 ```
  aws --version
 aws-cli/2.1.30 Python/3.8.8 Darwin/19.6.0 exe/x86_64 prompt/off
+```
+* Check the number of partions for a kafka topic
+```bash
+kafka/kafka_2.12-2.7.0/bin/kafka-topics.sh --describe --topic force-partition-topic --bootstrap-server b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092
 ```
 
 
