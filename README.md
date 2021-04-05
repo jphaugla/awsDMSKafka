@@ -78,7 +78,7 @@ cd template
     * The pipeline should be up and running in 15-20 minutes
     * on stack completion open the stack.out file to find the output variable for the MSK cluster ARN held in the parameter "StreamingBlogMSKCluster".  This value will be needed to look up the MSK cluster brokers
 ```bash
-./getBrokers.sh arn:aws:kafka:us-east-1:569119288395:cluster/StreamingBlogMSKCluster/54405a9e-96f5-494c-84ae-4a48f15e2b9f-13
+./getBrokers.sh <msk arn>
 {
     "BootstrapBrokerString": "b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9092",
     "BootstrapBrokerStringTls": "b-1.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9094,b-2.streamingblogmskclust.rvq2us.c13.kafka.us-east-1.amazonaws.com:9094"
