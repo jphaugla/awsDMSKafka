@@ -1,2 +1,1 @@
-aws dms modify-replication-task  --table-mappings file://table-mapping.json --replication-task-arn arn:aws:dms:us-east-1:569119288395:task:3WAMMJEJP3RA64HGKJ5UT6KJJE4LMLTLLGDKXOA
-# aws dms create-replication-task --replication-task-identifier 'dms-show-part' --source-endpoint-arn arn:aws:dms:us-east-1:569119288395:endpoint:WGUEUFLRDFSIFTF7EIOH6A3P5DCFQRJKWC7XY2A --target-endpoint-arn arn:aws:dms:us-east-1:569119288395:endpoint:A623PQWRSTGJKC2JE2LCSOKLAUV4PHZUGBVQQ6A --replication-instance-arn arn:aws:dms:us-east-1:569119288395:rep:3IRETHZGHMVFFSQ7BFB4X575O6WDDHROJG7TNVY --migration-type full-load-and-cdc --table-mappings file://table-mapping.json
+aws dms modify-replication-task  --table-mappings file://table-mapping.json --replication-task-arn <replication task arn>

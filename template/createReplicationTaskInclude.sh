@@ -1,0 +1,1 @@
+aws dms create-replication-task --replication-task-identifier 'include-schema-table' --source-endpoint-arn <source endpoint arn> --target-endpoint-arn <target endpoint arn> --replication-instance-arn <replication instance arn> --migration-type full-load-and-cdc --table-mappings file://table-mapping.json

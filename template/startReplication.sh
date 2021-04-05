@@ -1,3 +1,1 @@
-# aws dms start-replication-task --replication-task-arn arn:aws:dms:us-east-1:569119288395:task:A4TYSYUW45EHTNZK3QKU25EKKIJPUVGCQ74BWTY  --start-replication-task-type start-replication --region us-east-1
-# aws dms start-replication-task --replication-task-arn arn:aws:dms:us-east-1:569119288395:task:A4TYSYUW45EHTNZK3QKU25EKKIJPUVGCQ74BWTY  --start-replication-task-type reload-target --region us-east-1
-aws dms start-replication-task --replication-task-arn arn:aws:dms:us-east-1:569119288395:task:A4TYSYUW45EHTNZK3QKU25EKKIJPUVGCQ74BWTY --start-replication-task-type reload-target --region us-east-1
+aws dms start-replication-task --replication-task-arn <replication task arn> --start-replication-task-type reload-target --region us-east-1
